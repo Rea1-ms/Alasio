@@ -12,6 +12,7 @@ Emulator:
         aScreenCap_nc,
         DroidCast,
         DroidCast_raw,
+        scrcpy,
         nemu_ipc,
         ldopengl,
       ]
@@ -71,7 +72,7 @@ Optimization:
     TaskHoardingDuration: 0
     WhenTaskQueueEmpty:
       value: goto_main
-      option: [ stay_there, goto_main, stop_game ]
+      option: [ stay_there, goto_main, stop_game, stop_device ]
 
 # Empty group to create group._info
 RestartDevice:

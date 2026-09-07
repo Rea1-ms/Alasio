@@ -30,7 +30,7 @@ class DeviceConfig(Generic[T]):
         # Group `Emulator`
         self.Emulator_Serial = 'auto'
         self.Emulator_ScreenshotMethod = 'auto'  # auto, ADB, ADB_nc, uiautomator2, aScreenCap, aScreenCap_nc,
-        # DroidCast, DroidCast_raw, nemu_ipc, ldopengl
+        # DroidCast, DroidCast_raw, scrcpy, nemu_ipc, ldopengl
         self.Emulator_ControlMethod = 'MaaTouch'  # ADB, uiautomator2, minitouch, Hermit, MaaTouch
         self.Emulator_ScreenshotDedithering = False
         self.Emulator_AdbRestart = False
@@ -52,7 +52,7 @@ class DeviceConfig(Generic[T]):
         self.Optimization_ScreenshotInterval = 0.3
         self.Optimization_CombatScreenshotInterval = 1.0
         self.Optimization_TaskHoardingDuration = 0
-        self.Optimization_WhenTaskQueueEmpty = 'goto_main'  # stay_there, goto_main, stop_game
+        self.Optimization_WhenTaskQueueEmpty = 'goto_main'  # stay_there, goto_main, stop_game, stop_device
 
         """
         module.device

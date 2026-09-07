@@ -11,7 +11,7 @@ import typing_extensions as e
 class Emulator(a.GroupBase):
     Serial: str = 'auto'
     ScreenshotMethod: t.Literal[
-        'auto', 'ADB', 'ADB_nc', 'uiautomator2', 'aScreenCap', 'aScreenCap_nc', 'DroidCast', 'DroidCast_raw',
+        'auto', 'ADB', 'ADB_nc', 'uiautomator2', 'aScreenCap', 'aScreenCap_nc', 'DroidCast', 'DroidCast_raw', 'scrcpy',
         'nemu_ipc', 'ldopengl',
     ] = 'auto'
     ControlMethod: t.Literal['ADB', 'uiautomator2', 'minitouch', 'Hermit', 'MaaTouch'] = 'MaaTouch'
@@ -39,4 +39,4 @@ class Optimization(a.GroupBase):
     ScreenshotInterval: float = 0.3
     CombatScreenshotInterval: float = 1.0
     TaskHoardingDuration: int = 0
-    WhenTaskQueueEmpty: t.Literal['stay_there', 'goto_main', 'stop_game'] = 'goto_main'
+    WhenTaskQueueEmpty: t.Literal['stay_there', 'goto_main', 'stop_game', 'stop_device'] = 'goto_main'

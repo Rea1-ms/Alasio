@@ -112,6 +112,7 @@
           "aScreenCap_nc": "aScreenCap_nc",
           "DroidCast": "DroidCast",
           "DroidCast_raw": "DroidCast_raw",
+          "scrcpy": "scrcpy",
           "nemu_ipc": "nemu_ipc",
           "ldopengl": "ldopengl"
         }
@@ -132,6 +133,7 @@
           "aScreenCap_nc": "aScreenCap_nc",
           "DroidCast": "DroidCast",
           "DroidCast_raw": "DroidCast_raw",
+          "scrcpy": "scrcpy",
           "nemu_ipc": "nemu_ipc",
           "ldopengl": "ldopengl"
         }
@@ -148,6 +150,7 @@
           "aScreenCap_nc": "aScreenCap_nc",
           "DroidCast": "DroidCast",
           "DroidCast_raw": "DroidCast_raw",
+          "scrcpy": "scrcpy",
           "nemu_ipc": "nemu_ipc",
           "ldopengl": "ldopengl"
         }
@@ -168,6 +171,7 @@
           "aScreenCap_nc": "aScreenCap_nc",
           "DroidCast": "DroidCast",
           "DroidCast_raw": "DroidCast_raw",
+          "scrcpy": "scrcpy",
           "nemu_ipc": "nemu_ipc",
           "ldopengl": "ldopengl"
         }
@@ -188,6 +192,7 @@
           "aScreenCap_nc": "aScreenCap_nc",
           "DroidCast": "DroidCast",
           "DroidCast_raw": "DroidCast_raw",
+          "scrcpy": "scrcpy",
           "nemu_ipc": "nemu_ipc",
           "ldopengl": "ldopengl"
         }
@@ -568,7 +573,8 @@
         "option_i18n": {
           "stay_there": "停在原处",
           "goto_main": "前往主界面",
-          "stop_game": "关闭游戏"
+          "stop_game": "关闭游戏",
+          "stop_device": "关闭模拟器"
         }
       },
       "en-US": {
@@ -577,7 +583,8 @@
         "option_i18n": {
           "stay_there": "Stay There",
           "goto_main": "Goto Main Page",
-          "stop_game": "Close Game"
+          "stop_game": "Close Game",
+          "stop_device": "Close Emulator"
         }
       },
       "ja-JP": {
@@ -586,7 +593,8 @@
         "option_i18n": {
           "stay_there": "stay_there",
           "goto_main": "goto_main",
-          "stop_game": "stop_game"
+          "stop_game": "stop_game",
+          "stop_device": "エミュレーターを閉じる"
         }
       },
       "zh-TW": {
@@ -595,7 +603,8 @@
         "option_i18n": {
           "stay_there": "停在原處",
           "goto_main": "前往主界面",
-          "stop_game": "關閉遊戲"
+          "stop_game": "關閉遊戲",
+          "stop_device": "關閉模擬器"
         }
       },
       "en-ES": {
@@ -604,7 +613,8 @@
         "option_i18n": {
           "stay_there": "Quedarse en el sitio",
           "goto_main": "Ir al lugar principal",
-          "stop_game": "Cerrar el juego"
+          "stop_game": "Cerrar el juego",
+          "stop_device": "Cerrar el emulador"
         }
       }
     }
