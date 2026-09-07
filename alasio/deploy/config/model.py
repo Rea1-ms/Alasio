@@ -7,12 +7,12 @@ which writes the ``Meta(extra={"help": ...})`` annotations back into the
 yaml file as comments, matched by the full key path. ``help`` is a list
 of lines, each line is written as one comment row above the key.
 
-Field names and nesting follow the yaml structure exactly, so the model
-can be default constructed and unknown fields are ignored for forward
-compatibility::
+Field names and nesting follow the current yaml structure. The loader also
+recognizes the historical top-level ``Deploy`` wrapper used by older ALAS
+projects and exposes it through the same model without rewriting the file::
 
-    yaml = YamlConfig('config/deploy.yaml', DeployConfig)
-    yaml.data.Deploy.Git.Repository
+    deploy = DeployConfig().config.data
+    deploy.Backend.Port
 """
 
 from typing import Optional
@@ -242,8 +242,15 @@ class DeployModel(Struct):
 class DeployConfig(metaclass=Singleton):
     @cached_property
     def config(self):
+        from alasio.deploy.config.legacy import (
+            LegacyDeployYamlConfig,
+            is_legacy_deploy_config,
+        )
         from alasio.ext.file.yamlconfig import YamlConfig
+
         file = env.PROJECT_ROOT.joinpath('config/deploy.yaml')
+        if is_legacy_deploy_config(file):
+            return LegacyDeployYamlConfig(file, model=DeployModel)
         config = YamlConfig(file, model=DeployModel)
         if config.errors:
             config.write()
