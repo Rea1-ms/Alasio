@@ -94,7 +94,7 @@ async def task_listen_shutdown():
     (which will trigger force shutdown)
     """
     if WorkerContext_obj is None:
-        logger.error(f'Empty WorkerContext_obj, cannot listen to shutdown')
+        logger.error('Empty WorkerContext_obj, cannot listen to shutdown')
         return
 
     try:
@@ -232,7 +232,7 @@ def create_app():
     # Mount static files
 
     # for frontend local builds
-    root = PathStr(__file__).uppath(3).joinpath('frontend/build')
+    root = PathStr.new(__file__).uppath(3).joinpath('frontend/build')
     SPANoCacheStaticFiles.mount(app, '/', directory=root, name='static')
     # since static files mounted at "/", any route after it won't work
 
