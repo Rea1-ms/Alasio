@@ -63,8 +63,13 @@ test = [
 ]
 all = ["alasio[image,backend,test]"]
 
-[tool.setuptools]
-packages = ["alasio"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["alasio*"]
+namespaces = true
+
+[tool.setuptools.package-data]
+"*" = ["*.json", "*.yaml", "*.yml", "*.gitattributes"]
 
 [tool.pytest.ini_options]
 # Disable the pyfakefs pytest plugin globally: the project implements its own
