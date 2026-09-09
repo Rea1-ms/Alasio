@@ -2,21 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as yaml from "js-yaml";
 import { appState, isConfigLang, isConfigTheme } from "./app-state";
-
-interface DeployConfig {
-  Python?: {
-    PythonExecutable?: string;
-  };
-  Backend?: {
-    Host?: string;
-    Port?: number;
-  };
-  Webapp?: {
-    Lang?: string;
-    Theme?: string;
-    DpiScaling?: boolean;
-  };
-}
+import { type DeployConfig, normalizeDeployConfig } from "./deploy-config";
 
 // `type` doubles as the i18n key consumed by the renderer error page (it
 // matches the key names in renderer/i18n/Error.json 1:1); the localized
@@ -94,7 +80,7 @@ export function loadConfig(): void {
   const rootPath = path.dirname(path.dirname(configFilePath));
 
   const configContent = fs.readFileSync(configFilePath, "utf-8");
-  const config = yaml.load(configContent) as DeployConfig;
+  const config = normalizeDeployConfig(yaml.load(configContent) as DeployConfig | null);
 
   // Get Python executable.
   // No default fallback (e.g. 'python' from PATH): mixing in the system
