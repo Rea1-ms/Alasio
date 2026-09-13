@@ -6,10 +6,17 @@
 
 {#if floating}
   <!-- Floating mode: the embedded web app provides its own header,
-       only the transparent drag strip and window controls are overlaid. -->
-  <div class="fixed top-0 right-0 left-0 z-100 flex h-12 items-center select-none">
-    <div class="flex-1 self-stretch" style="-webkit-app-region: drag"></div>
-    <WindowControls />
+       so only the non-interactive center title and window controls may
+       intercept pointer input. The outer overlay must stay transparent to
+       clicks or it blocks the iframe's config, language and theme controls. -->
+  <div class="pointer-events-none fixed top-0 right-0 left-0 z-100 flex h-12 items-center justify-end select-none">
+    <div
+      class="pointer-events-auto absolute inset-y-0 right-1/3 left-1/3"
+      style="-webkit-app-region: drag"
+    ></div>
+    <div class="pointer-events-auto">
+      <WindowControls />
+    </div>
   </div>
 {:else}
   <!-- Keep h-12 aligned with AppHeader bottom in the embedded web app -->
