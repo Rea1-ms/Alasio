@@ -6,8 +6,9 @@
   "main": "dist/main/index.js",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && tsx scripts/csp-inline-hash/fix.ts && tsx scripts/pack-asar.ts",
-    "package": "vite build && electron-builder && tsx scripts/electron-cleanup.ts",
+    "build:renderer": "vite build && tsx scripts/csp-inline-hash/fix.ts",
+    "build": "pnpm run build:renderer && tsx scripts/pack-asar.ts",
+    "package": "pnpm run build:renderer && electron-builder && tsx scripts/electron-cleanup.ts",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
