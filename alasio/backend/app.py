@@ -6,15 +6,16 @@ import platform
 import socket
 
 import trio
+from hypercorn import Config
 from starlette.responses import PlainTextResponse
 from starlette.routing import Route, WebSocketRoute
 
 from alasio.backend.auth import auth
 from alasio.backend.dev.assets import ImageStaticFiles, SPANoCacheStaticFiles
-from alasio.backend.lifespan import get_shutdown_trigger
+from alasio.backend.lifespan import announce_started, get_shutdown_trigger
 from alasio.backend.middleware.gate import DeploymentGateMiddleware
+from alasio.backend.reactive.source import BaseSource
 from alasio.backend.topic._worker import BACKEND_WORKER_MANAGER
-from alasio.backend.topic.mod import HISTORY_CACHE
 from alasio.backend.topic.scan import ConfigScanSource
 from alasio.backend.ws import renew as ws_renew
 from alasio.backend.ws.context import GLOBAL_CONTEXT, GlobalContext
@@ -114,7 +115,10 @@ def sync_task_gc(wait=8):
     logger.check_rotate()
     SQLITE_POOL.gc(wait)
     MOD_JSON_CACHE.gc(wait)
-    HISTORY_CACHE.gc(wait)
+    # data-expiry gc of topic sources: instances whose data TTL expired
+    # (membership is static, GC=True classes only; NoCachePush removes
+    # itself on the last unsubscribe and never appears here)
+    BaseSource.gc_idle()
     # renewal codes: expiry scan, the main cleanup hook
     renewal_manager.gc()
 
@@ -155,9 +159,6 @@ async def lifespan(app):
         nursery.start_soon(task_listen_shutdown)
         # start gc task
         nursery.start_soon(task_gc)
-        # start message bus task
-        nursery.start_soon(WebsocketServer.task_msgbus_global)
-        nursery.start_soon(WebsocketServer.task_msgbus_config)
         # warmups
         nursery.start_soon(ConfigScanSource.create_default_config)
 
@@ -283,12 +284,56 @@ def apply_hypercorn_exclusivity_patch():
     Config._create_sockets = patched_create_sockets
 
 
+class BackendConfig(Config):
+    """
+    Hypercorn Config subclass that announces pipe readiness after binding.
+
+    The backend announces b'command:started' over the supervisor pipe once
+    the listeners are bound (see lifespan.announce_started): the
+    supervisor's recv_loop ends its startup window on the first backend
+    message, and the stdin listener (command:stop channel) only starts
+    after that confirmation. Without the announce the confirmation would
+    wait out the whole startup_timeout (5s), so a close right after the
+    webapp opened would sit unread in the stdin pipe until Electron
+    force-kills the tree.
+
+    The announce lives in create_sockets() rather than the starlette
+    lifespan because hypercorn (trio) runs the lifespan startup before it
+    binds the sockets: announcing there would end the supervisor's startup
+    window while the port is still unbound, and a bind failure (port in
+    use) would then crash after the window ended -- the supervisor would
+    restart-loop instead of treating it as a startup failure. create_sockets
+    (public) is overridden rather than _create_sockets because SSL mode
+    binds several socket lists in one create_sockets call, so the announce
+    fires exactly once, after every list bound successfully.
+    """
+
+    def create_sockets(self):
+        """
+        Bind the listeners, then announce pipe readiness to the supervisor.
+
+        A bind failure (port already in use) raises inside the super call
+        before the announce, so it stays a startup failure and the
+        supervisor does not restart-loop on it.
+
+        Returns:
+            Sockets: hypercorn Sockets dataclass of the bound listeners
+        """
+        sockets = super().create_sockets()
+        # listeners are bound and about to serve: tell the supervisor
+        # (no-op when running without a supervisor pipe)
+        announce_started()
+        return sockets
+
+
 def create_config(args=None):
     """
     Args:
         args (list[str] | None): Commandline args from supervisor level
             Use this `args` input instead of `sys.args`, as backend is a sub-process
     """
+    logger.hr('Start', level=0)
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--root', type=str, default='')
     parser.add_argument('--host', type=str, default='')
@@ -301,7 +346,10 @@ def create_config(args=None):
         os.chdir(parsed_args.root)
     else:
         env.set_project_root(os.getcwd())
-    logger.info(f'[PROJECT_ROOT] {env.PROJECT_ROOT}')
+    logger.attr('PROJECT_ROOT', env.PROJECT_ROOT)
+    logger.attr('ELECTRON', bool(env.ELECTRON))
+    DeployConfig().config.show()
+
     apply_hypercorn_exclusivity_patch()
     deploy = DeployConfig().config.data
 
@@ -320,9 +368,9 @@ def create_config(args=None):
         port = 8000
 
     # build hypercorn config
-    from hypercorn import Config
-    config = Config()
+    config = BackendConfig()
     config.bind = [f'{host}:{port}']
+    logger.attr('Bind', config.bind)
 
     # SSL wiring: when both key and cert are configured the deployment
     # auto-enters public mode (DeploymentGateMiddleware mode detection)
@@ -333,6 +381,9 @@ def create_config(args=None):
     if deploy.Backend.WebuiSSLKey and deploy.Backend.WebuiSSLCert:
         config.keyfile = deploy.Backend.WebuiSSLKey
         config.certfile = deploy.Backend.WebuiSSLCert
+        logger.attr('SSL', True)
+    else:
+        logger.attr('SSL', False)
 
     # To enable assess log
     # config.accesslog = '-'

@@ -11,7 +11,7 @@ from starlette.websockets import WebSocketDisconnect, WebSocketState
 
 from alasio.backend.reactive.base_rpc import rpc
 from alasio.backend.reactive.event import AccessDenied, RpcValueError
-from alasio.backend.reactive.rx_trio import async_reactive_source
+from alasio.backend.reactive.source import EventSource
 from alasio.backend.ws.ws_server import WebsocketTopicServer
 from alasio.backend.ws.ws_topic import BaseTopic
 
@@ -98,23 +98,31 @@ class FakeWebSocket:
         self._inbox_send.close()
 
 
+class SampleSource(EventSource):
+    TOPIC_NAME = 'sample'
+
+    def __init__(self, data):
+        super().__init__()
+        self.data = data
+
+
 class SampleTopic(BaseTopic):
     """
-    A test topic with mutable data, and RPC methods covering every response path
+    A test topic bound to a static cache source, with RPC methods covering
+    every response path
     """
-    NAME = 'sample'
+    TOPIC_NAME = 'sample'
 
     def __init__(self, conn_id, server, initial=_MISSING):
         super().__init__(conn_id, server)
         if initial is _MISSING:
             initial = {'a': 1, 'b': 2}
-        self._raw = initial
+        self.source = SampleSource(initial)
         # Record of RPC calls, as (func_name, *args)
         self.calls = []
 
-    @async_reactive_source
-    async def data(self):
-        return self._raw
+    async def get_source(self):
+        return self.source
 
     @rpc
     async def echo(self, x: int, y: str = 'hi'):
@@ -137,51 +145,82 @@ class SampleTopic(BaseTopic):
         raise ValueError('boom')
 
 
+class FullOnlySource(EventSource):
+    TOPIC_NAME = 'full_only'
+
+    def __init__(self, data):
+        super().__init__()
+        self.data = data
+
+
 class FullOnlyTopic(BaseTopic):
     """
-    A test topic that pushes full events only
+    A test topic bound to a static cache source
     """
-    NAME = 'full_only'
-    FULL_EVENT_ONLY = True
+    TOPIC_NAME = 'full_only'
 
     def __init__(self, conn_id, server):
         super().__init__(conn_id, server)
-        self._raw = {'a': 1, 'b': 2}
+        self.source = FullOnlySource({'a': 1, 'b': 2})
 
-    @async_reactive_source
-    async def data(self):
-        return self._raw
+    async def get_source(self):
+        return self.source
+
+
+class EmptySource(EventSource):
+    TOPIC_NAME = 'empty'
+
+    def __init__(self, data):
+        super().__init__()
+        self.data = data
 
 
 class EmptyTopic(BaseTopic):
     """
-    A test topic whose data is falsy, so op_sub sends nothing
+    A test topic whose source data is falsy: subscribing registers but
+    sends nothing (empty data sends no full)
     """
-    NAME = 'empty'
+    TOPIC_NAME = 'empty'
 
     def __init__(self, conn_id, server):
         super().__init__(conn_id, server)
+        self.source = EmptySource({})
 
-    @async_reactive_source
-    async def data(self):
-        return {}
+    async def get_source(self):
+        return self.source
+
+
+class ErrorSource(EventSource):
+    TOPIC_NAME = 'error_topic'
+
+    def __init__(self, data):
+        super().__init__()
+        self.data = data
 
 
 class ErrorTopic(BaseTopic):
     """
     A test topic whose op_unsub raises, cleanup should survive it
     """
-    NAME = 'error_topic'
+    TOPIC_NAME = 'error_topic'
 
     def __init__(self, conn_id, server):
         super().__init__(conn_id, server)
+        self.source = ErrorSource({'x': 1})
 
-    @async_reactive_source
-    async def data(self):
-        return {'x': 1}
+    async def get_source(self):
+        return self.source
 
     async def op_unsub(self):
         raise RuntimeError('unsub failed')
+
+
+class MismatchSource(EventSource):
+    TOPIC_NAME = 'mismatch_actual'
+
+    def __init__(self, data):
+        super().__init__()
+        self.data = data
 
 
 class MismatchTopic(BaseTopic):
@@ -189,15 +228,14 @@ class MismatchTopic(BaseTopic):
     A test topic whose NAME differs from its registered key, so the server
     must key subscriptions by the requested name
     """
-    NAME = 'mismatch_actual'
+    TOPIC_NAME = 'mismatch_actual'
 
     def __init__(self, conn_id, server):
         super().__init__(conn_id, server)
-        self._raw = {'x': 1}
+        self.source = MismatchSource({'x': 1})
 
-    @async_reactive_source
-    async def data(self):
-        return self._raw
+    async def get_source(self):
+        return self.source
 
     @rpc
     async def echo(self):
@@ -209,13 +247,13 @@ class HarnessWebsocketServer(WebsocketTopicServer):
     A WebsocketTopicServer with the test topics registered
     """
     ALL_TOPIC_CLASS = {
-        SampleTopic.topic_name(): SampleTopic,
-        FullOnlyTopic.topic_name(): FullOnlyTopic,
-        EmptyTopic.topic_name(): EmptyTopic,
-        ErrorTopic.topic_name(): ErrorTopic,
+        SampleTopic.TOPIC_NAME: SampleTopic,
+        FullOnlyTopic.TOPIC_NAME: FullOnlyTopic,
+        EmptyTopic.TOPIC_NAME: EmptyTopic,
+        ErrorTopic.TOPIC_NAME: ErrorTopic,
     }
     DEFAULT_TOPIC_CLASS = {
-        SampleTopic.topic_name(): SampleTopic,
+        SampleTopic.TOPIC_NAME: SampleTopic,
     }
 
 

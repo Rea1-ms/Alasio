@@ -5,128 +5,96 @@ import trio.to_thread
 from msgspec import ValidationError
 from msgspecerror import ErrorInfo
 
-from alasio.backend.reactive.base_msgbus import on_msgbus_config_event
 from alasio.backend.reactive.base_rpc import rpc
 from alasio.backend.reactive.event import ResponseEvent
-from alasio.backend.reactive.rx_trio import async_reactive_nocache
+from alasio.backend.reactive.source import DiskCache, KeyedSource
+from alasio.backend.topic import _config_event
+from alasio.backend.topic._gui_config import GuiConfigSource
 from alasio.backend.topic.state import ConnState, NavState
-from alasio.backend.worker.event import ConfigEvent
 from alasio.backend.ws.ws_topic import BaseTopic
 from alasio.config.entry.loader import MOD_LOADER
 from alasio.config.entry.model import ConfigSetEvent
-from alasio.ext.deep import deep_get, deep_iter, deep_set
+
+
+class ConfigNavSource(KeyedSource, DiskCache):
+    """
+    One-shot disk-cache source of ConfigNav: key (mod_name, lang).
+
+    Static nav content read from disk; no push after the full snapshot --
+    content changes come from subscription-condition changes (mod / lang),
+    which rebuild the data through get_source -> reinit. Recycled by the
+    data-expiry GC when the data TTL expired, regardless of subscribers
+    (DiskCache semantics).
+    """
+    TOPIC_NAME = 'ConfigNav'
+
+    def __init__(self, mod_name, lang):
+        super().__init__()
+        self.mod_name = mod_name
+        self.lang = lang
+
+    def on_init(self):
+        """
+        Returns:
+            dict[str, dict[str, dict]]:
+                key: {nav_name}.{card_name}
+                value:
+                    {"i18n": name} for normal cards
+                    {"i18n": name, "scheduler": True} for cards with scheduler
+        """
+        return MOD_LOADER.get_gui_nav(self.mod_name, self.lang)
 
 
 class ConfigNav(BaseTopic):
-    FULL_EVENT_ONLY = True
+    TOPIC_NAME = 'ConfigNav'
 
-    @async_reactive_nocache
-    async def data(self):
-        """
-        Returns:
-            dict[str, dict[str, str]]:
-                key: {nav_name}.{card_name}
-                value: translation
-        """
+    async def get_source(self):
         state = ConnState(self.conn_id, self.server)
         mod_name = await state.mod_name
         lang = await state.lang
-        if not mod_name:
-            return {}
+        if not mod_name or not lang:
+            return None
+        source = ConfigNavSource.get(mod_name, lang)
+        await source.reinit()
+        return source
 
-        data = await trio.to_thread.run_sync(
-            MOD_LOADER.get_gui_nav,
-            mod_name, lang
-        )
-        return data
+
+class ConfigArgSource(KeyedSource, GuiConfigSource):
+    """
+    No-cache view source of the ConfigArg topic: key (mod_name,
+    config_name, nav_name, lang). The full view (values + i18n) is built
+    on subscribe and config-save events are forwarded to the displayed
+    args; the shared implementation lives in GuiConfigSource (the
+    structure mapping and the ConfigSetEvent conversion are the same for
+    every nav), this class only fixes its key shape.
+    """
+    TOPIC_NAME = 'ConfigArg'
+    # Constructor signature (mod_name, config_name, nav_name, lang) is
+    # inherited from GuiConfigSource: the whole argument tuple is the
+    # KeyedSource registry key.
 
 
 class ConfigArg(BaseTopic):
-    FULL_EVENT_ONLY = True
-    # dict that convert config path to topic data path
-    # key: (task, group, arg), value: (card_name, group_name, arg_name)
-    dict_config_to_topic = {}
+    TOPIC_NAME = 'ConfigArg'
 
-    @async_reactive_nocache
-    async def data(self):
+    async def get_source(self):
         """
-        Returns:
-            dict[str, dict[str, dict[str, dict]]]:
-                key: {card_name}.{group_name}.{arg_name}
-                value: {
-                    'task': task_name,
-                    'group': group_name,
-                    'arg': arg_name,
-                    'dt': data_type, # see TYPE_DT_TO_PYTHON
-                    'value': Any,
-                    ...  # any others
-                }
+        Resolve the view source of the current (mod, config, nav, lang);
+        the full view is built by source.subscribe() on registration.
         """
         state = ConnState(self.conn_id, self.server)
         mod_name = await state.mod_name
         config_name = await state.config_name
         nav_name = await state.nav_name
-        if not mod_name or not config_name or not nav_name:
-            return {}
-
-        lang: str = await state.lang
-        # call
-        data = await trio.to_thread.run_sync(
-            MOD_LOADER.get_gui_config,
-            mod_name, config_name, nav_name, lang
-        )
-
-        # convert config path to topic data path
-        dict_config_to_topic = {}
-        for keys, info in deep_iter(data, depth=3):
-            card_name, group_name, arg_name = keys
-            if group_name == '_info':
-                continue
-            try:
-                task = info['task']
-                group = info['group']
-                arg = info['arg']
-            except KeyError:
-                # this shouldn't happen
-                continue
-            dict_config_to_topic[(task, group, arg)] = (card_name, group_name, arg_name)
-        self.dict_config_to_topic = dict_config_to_topic
-
-        return data
-
-    @on_msgbus_config_event('ConfigArg')
-    async def on_config_event(self, event: "ConfigSetEvent | list[ConfigSetEvent] | dict | list[dict]"):
-        """
-        Handle config event from msgbus
-        """
-        if isinstance(event, list):
-            events = event
-        else:
-            events = [event]
-
-        resps = []
-        data = await self.data
-        for e in events:
-            # we may receive dict from worker, because it's decoded from bytes
-            if type(e) is dict:
-                e = ConfigSetEvent(**e)
-
-            key = self.dict_config_to_topic.get((e.task, e.group, e.arg))
-            if key is None:
-                # not displaying this key
-                continue
-
-            topic_key = (*key, 'value')
-            # set to topic data
-            deep_set(data, keys=topic_key, value=e.value)
-            # collect response
-            resps.append(ResponseEvent(t=self.topic_name(), o='set', k=topic_key, v=e.value))
-
-        if resps:
-            if len(resps) == 1:
-                await self.server.send(resps[0])
-            else:
-                await self.server.send(resps)
+        lang = await state.lang
+        if not mod_name or not config_name or not nav_name or not lang:
+            return None
+        source = ConfigArgSource.get(mod_name, config_name, nav_name, lang)
+        if source is None:
+            # config / mod / nav deleted: silent, next dependency change
+            # re-runs this flow
+            return None
+        return source
 
     @rpc
     async def set(self, task: str, group: str, arg: str, value: Any):
@@ -137,6 +105,8 @@ class ConfigArg(BaseTopic):
         nav: NavState = await state.nav_state
         mod_name = nav.mod_name
         config_name = nav.config_name
+        nav_name = nav.nav_name
+        lang = await state.lang
         if not config_name:
             return
 
@@ -148,22 +118,24 @@ class ConfigArg(BaseTopic):
         responses: "list[ConfigSetEvent]"
         # logger.info([success, responses])
         if success:
-            # broadcast to all connections
-            event = ConfigEvent(t=self.topic_name(), c=config_name, v=responses)
-            await self.msgbus_config_asend(event)
-            await self.msgbus_global_asend(self.topic_name(), event)
+            # unified event entry: viewport sources of every nav + Dashboard
+            # + TaskQueue linkage (sync, thread safe)
+            _config_event.on_config_event(config_name, responses)
         else:
-            # there always be one rollback_event
+            # there always be one rollback_event; convert it directly into a
+            # set response for this connection (values are not re-read from
+            # the config store), the error message comes from resp.error
             resp = responses[0]
-            # rollback self
-            key = self.dict_config_to_topic.get((resp.task, resp.group, resp.arg))
+            source = ConfigArgSource.get(mod_name, config_name, nav_name, lang)
+            if source is None:
+                # config deleted: nothing to roll back on screen
+                return
+            key = source.dict_config_to_topic.get((resp.task, resp.group, resp.arg))
             if key is None:
                 # not displaying this key
                 return
             key = (*key, 'value')
-            data = await self.data
-            prev = deep_get(data, key, default=resp.value)
-            resp_event = ResponseEvent(t=self.topic_name(), o='set', k=key, v=prev)
+            resp_event = ResponseEvent(t=self.TOPIC_NAME, o='set', k=key, v=resp.value)
             await self.server.send(resp_event)
             # re-raise error, so server will treat as RPC call failed
             if resp.error is not None:
@@ -197,10 +169,8 @@ class ConfigArg(BaseTopic):
             # reset failed, do nothing
             return
 
-        # broadcast to all connections
-        event = ConfigEvent(t=self.topic_name(), c=config_name, v=resp)
-        await self.msgbus_config_asend(event)
-        await self.msgbus_global_asend(self.topic_name(), event)
+        # unified event entry
+        _config_event.on_config_event(config_name, [resp])
 
     @rpc
     async def group_reset(self, card: str):
@@ -212,14 +182,17 @@ class ConfigArg(BaseTopic):
         mod_name = nav.mod_name
         config_name = nav.config_name
         nav_name = nav.nav_name
+        lang = await state.lang
         if not config_name or not nav_name:
             return
 
         # get all task-group within card
         # copy to avoid modification during iterating, group reset is rarely used so copy is acceptable
+        source = ConfigArgSource.get(mod_name, config_name, nav_name, lang)
+        if source is None:
+            return
         list_task_group = deque()
-        dict_config_to_topic = self.dict_config_to_topic.copy()
-        for key, value in dict_config_to_topic.items():
+        for key, value in source.dict_config_to_topic.items():
             # dict_config_to_topic[(task, group, arg)] = (card_name, group_name, arg_name)
             try:
                 task = key[0]
@@ -241,7 +214,5 @@ class ConfigArg(BaseTopic):
         if not resp:
             return
 
-        # broadcast to all connections
-        event = ConfigEvent(t=self.topic_name(), c=config_name, v=resp)
-        await self.msgbus_config_asend(event)
-        await self.msgbus_global_asend(self.topic_name(), event)
+        # unified event entry
+        _config_event.on_config_event(config_name, resp)

@@ -16,7 +16,7 @@ from alasio.backend.auth.auth import JWT_MANAGER
 from alasio.backend.mpipe.token_backend import token_table
 from alasio.backend.reactive.base_rpc import rpc
 from alasio.backend.reactive.event import RequestEvent
-from alasio.backend.reactive.rx_trio import async_reactive_source
+from alasio.backend.reactive.source import EventSource
 from alasio.backend.ws.ws_server import WebsocketTopicServer
 from alasio.backend.ws.ws_topic import BaseTopic
 from tests.backend.ws.helpers import ServerHarness
@@ -42,35 +42,49 @@ def auth_env(monkeypatch):
     monkeypatch.undo()
 
 
+class RestrictedSource(EventSource):
+    TOPIC_NAME = 'restricted'
+
+    def __init__(self, data):
+        super().__init__()
+        self.data = data
+
+
 class RestrictedTopic(BaseTopic):
     """A topic-level restricted topic (REQUIRE_ELECTRON = True)."""
-    NAME = 'restricted'
+    TOPIC_NAME = 'restricted'
     REQUIRE_ELECTRON = True
 
     def __init__(self, conn_id, server):
         super().__init__(conn_id, server)
-        self._raw = {'x': 1}
+        self.source = RestrictedSource({'x': 1})
 
-    @async_reactive_source
-    async def data(self):
-        return self._raw
+    async def get_source(self):
+        return self.source
 
     @rpc
     async def secret_op(self):
         return 'ok'
 
 
+class MixedSource(EventSource):
+    TOPIC_NAME = 'mixed'
+
+    def __init__(self, data):
+        super().__init__()
+        self.data = data
+
+
 class MixedTopic(BaseTopic):
     """A public topic with one electron-only rpc."""
-    NAME = 'mixed'
+    TOPIC_NAME = 'mixed'
 
     def __init__(self, conn_id, server):
         super().__init__(conn_id, server)
-        self._raw = {'m': 1}
+        self.source = MixedSource({'m': 1})
 
-    @async_reactive_source
-    async def data(self):
-        return self._raw
+    async def get_source(self):
+        return self.source
 
     @rpc
     async def public_op(self):
@@ -83,8 +97,8 @@ class MixedTopic(BaseTopic):
 
 class AuthHarnessServer(WebsocketTopicServer):
     ALL_TOPIC_CLASS = {
-        RestrictedTopic.topic_name(): RestrictedTopic,
-        MixedTopic.topic_name(): MixedTopic,
+        RestrictedTopic.TOPIC_NAME: RestrictedTopic,
+        MixedTopic.TOPIC_NAME: MixedTopic,
     }
     DEFAULT_TOPIC_CLASS = {}
 
@@ -421,7 +435,7 @@ class TestRestrictedRpc:
 class FakeNotifyServer:
     """Minimal server stub for notify_rotation fault-tolerance tests."""
 
-    ALL_TOPIC_CLASS = {RestrictedTopic.topic_name(): RestrictedTopic}
+    ALL_TOPIC_CLASS = {RestrictedTopic.TOPIC_NAME: RestrictedTopic}
 
     def __init__(self, subscribed, auth_token, fail_send=False, hang_send=False, hang_close=False):
         """
