@@ -173,6 +173,12 @@ class LegacyDeployYamlConfig:
         for error in errors:
             logger.warning(f'Invalid deploy config value: {error}')
 
+    @staticmethod
+    def _secrete_value(path, value):
+        if 'Password' in path:
+            return '********'
+        return value
+
     def read(self):
         try:
             self._source_text = atomic_read_text(self.file)
@@ -280,7 +286,8 @@ class LegacyDeployYamlConfig:
             after = _get_path(current, path)
             if before == after:
                 continue
-            logger.info(f'  {".".join(path)} = {after!r}')
+            display = self._secrete_value(path, after)
+            logger.info(f'  {".".join(path)} = {display!r}')
             count += 1
         if count:
             logger.info('(rest of the config is the same as default)')
