@@ -8,7 +8,12 @@ import typing_extensions as e
 
 from alasio.base.servertime import ServerTime
 from alasio.config.alasio.store_model import (
-    DashboardAmount, DashboardDynamicTotal, DashboardRemain, DashboardTotal, cap_value
+    DashboardAmount,
+    DashboardDynamicTotal,
+    DashboardRemain,
+    DashboardText,
+    DashboardTotal,
+    cap_value,
 )
 from alasio.config.const import DataInconsistent
 from alasio.logger import logger
@@ -201,6 +206,29 @@ class TestDashboardBaseIsExpiredWithServerUpdate:
         obj.Time = (last_update + timedelta(hours=1)).astimezone(timezone.utc)
         obj.update()
         assert obj.Value == 5
+
+
+# ---- Tests: DashboardText ----
+
+
+class TestDashboardText:
+    """Test suite for short text dashboard values."""
+
+    def test_default_is_empty(self):
+        obj = DashboardText()
+        assert obj.is_empty() is True
+        assert obj.pretty() == ''
+
+    def test_set_updates_value_and_time(self):
+        obj = DashboardText()
+        old_time = obj.Time
+
+        assert obj.set('3/3 remaining') is True
+
+        assert obj.Value == '3/3 remaining'
+        assert obj.pretty() == '3/3 remaining'
+        assert obj.is_empty() is False
+        assert obj.Time > old_time
 
 
 # ---- Tests: DashboardAmount.meta ----

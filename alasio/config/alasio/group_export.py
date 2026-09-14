@@ -30,6 +30,7 @@ from alasio.config.alasio.store_model import (
     DashboardBase,
     DashboardDynamicTotal,
     DashboardRemain,
+    DashboardText,
     DashboardTotal,
 )
 

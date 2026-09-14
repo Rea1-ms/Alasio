@@ -64,5 +64,21 @@
       "zh-TW": {"name": "DashboardDynamicTotal.Total", "help": ""},
       "en-ES": {"name": "DashboardDynamicTotal.Total", "help": ""}
     }
+  },
+  "DashboardText": {
+    "_info": {
+      "zh-CN": {"name": "文本状态", "help": "显示简短的文本状态和更新时间。"},
+      "en-US": {"name": "Text status", "help": "Show a short text status and its update time."},
+      "ja-JP": {"name": "テキスト状態", "help": "短いテキスト状態と更新時刻を表示します。"},
+      "zh-TW": {"name": "文字狀態", "help": "顯示簡短的文字狀態與更新時間。"},
+      "en-ES": {"name": "Estado de texto", "help": "Muestra un estado de texto breve y su hora de actualización."}
+    },
+    "Value": {
+      "zh-CN": {"name": "状态", "help": ""},
+      "en-US": {"name": "Status", "help": ""},
+      "ja-JP": {"name": "状態", "help": ""},
+      "zh-TW": {"name": "狀態", "help": ""},
+      "en-ES": {"name": "Estado", "help": ""}
+    }
   }
 }

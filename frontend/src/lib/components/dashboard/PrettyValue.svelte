@@ -36,6 +36,10 @@
     <span class={cn("truncate font-medium", variant === "primary" && "font-bold")}>
       {data.Value?.value ?? "NaN"}
     </span>
+  {:else if dashboardType === "Text"}
+    <span class={cn("truncate font-medium", variant === "primary" && "font-bold")}>
+      {data.Value?.value || "-"}
+    </span>
   {:else if dashboardType === "Total" || dashboardType === "Remain"}
     <!-- 8000 / 14000 -->
     {@render valueTotal(data.Value?.value, data.Value?.le)}

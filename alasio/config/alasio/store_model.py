@@ -57,6 +57,24 @@ class DashboardBase(a.GroupBase):
         return self.Time < update
 
 
+class DashboardText(DashboardBase, dict=True):
+    """Dashboard item containing a short text status."""
+
+    Value: str = ''
+
+    def is_empty(self):
+        return not self.Value
+
+    def pretty(self):
+        return self.Value
+
+    @batch_set
+    def set(self, value: str):
+        self.Value = value
+        self.Time = getnow()
+        return True
+
+
 class DashboardAmount(DashboardBase, dict=True):
     """
     Dashboard an integer value, integer is >= 0
