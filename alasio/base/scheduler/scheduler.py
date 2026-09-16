@@ -62,7 +62,7 @@ class AlasioScheduler:
     def __init__(self, config_name):
         self.config_name = config_name
         # Skip first restart
-        self.skip_first_tasks = {'Restart', 'RestartDevice', 'RestartGame'}
+        self.skip_first_tasks = {'Restart'}
 
     def create_config(self):
         from alasio.config.base import AlasioConfigBase

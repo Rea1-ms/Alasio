@@ -8,7 +8,7 @@ from alasio.backend.topic._gui_config import GuiConfigSource
 from alasio.backend.topic._worker import BACKEND_WORKER_MANAGER
 from alasio.backend.topic.config import ConfigArg
 from alasio.backend.topic.worker import get_mod
-from alasio.config.entry.loader import MOD_LOADER
+from alasio.config.entry.model import ConfigSetEvent
 from alasio.base.timer import getnow
 
 
@@ -38,7 +38,7 @@ class Device(ConfigArg):
         context = await self._get_view_context()
         if context is None:
             return
-        mod_name, config_name, _, _ = context
+        _, config_name, _, _ = context
         mod = await get_mod(config_name)
 
         states = await trio.to_thread.run_sync(BACKEND_WORKER_MANAGER.get_state_info)
@@ -47,15 +47,19 @@ class Device(ConfigArg):
             raise RpcValueError(
                 f'Cannot run device action while worker state is "{worker_state}"')
 
+        events = [
+            ConfigSetEvent(task=task, group='Scheduler', arg='Enable', value=True),
+            ConfigSetEvent(task=task, group='Scheduler', arg='NextRun', value=getnow()),
+        ]
         success, responses = await trio.to_thread.run_sync(
-            MOD_LOADER.gui_config_set,
-            mod_name, config_name, task, 'Scheduler', 'NextRun', getnow()
+            mod.config_batch_set, config_name, events, True
         )
         if not success:
-            if responses and responses[0].error is not None:
-                message = str(responses[0].error)
-            else:
-                message = f'Failed to schedule task "{task}"'
+            error = next(
+                (response.error for response in responses if response.error is not None),
+                None,
+            )
+            message = str(error) if error is not None else f'Failed to schedule task "{task}"'
             raise RpcValueError(message)
         _config_event.on_config_event(config_name, responses)
 

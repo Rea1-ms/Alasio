@@ -171,7 +171,7 @@ class TestAlasioSchedulerInit:
         """Constructor stores config_name and sets skip_first_tasks."""
         s = AlasioScheduler("my_config")
         assert s.config_name == "my_config"
-        assert s.skip_first_tasks == {"Restart", "RestartDevice", "RestartGame"}
+        assert s.skip_first_tasks == {"Restart"}
 
     def test_create_config_returns_alasio_config(self):
         """create_config() delegates to AlasioConfigBase."""

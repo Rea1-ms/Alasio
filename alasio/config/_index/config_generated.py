@@ -14,6 +14,11 @@ class AlasioConfigGenerated:
     """
 
     """
+    ========== nav: alasio ==========
+    """
+    Scheduler: "alasio.Scheduler"
+
+    """
     ========== nav: device ==========
     """
     # ----- Device -----
@@ -23,15 +28,10 @@ class AlasioConfigGenerated:
     Optimization: "device.Optimization"
 
     # ----- RestartDevice -----
-    # Scheduler: "alasio.SchedulerStatic"
+    # Scheduler: "alasio.Scheduler"
 
     # ----- RestartGame -----
-    # Scheduler: "alasio.SchedulerStatic"
-
-    """
-    ========== nav: alasio ==========
-    """
-    Scheduler: "alasio.Scheduler"
+    # Scheduler: "alasio.Scheduler"
 
     """
     ========== nav: mixin ==========

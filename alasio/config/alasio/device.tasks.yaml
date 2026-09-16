@@ -9,12 +9,12 @@ Device:
 
 RestartDevice:
   groups:
-    Scheduler: SchedulerStatic
+    Scheduler:
   displays: null
 
 RestartGame:
   groups:
-    Scheduler: SchedulerStatic
+    Scheduler:
   displays: null
 
 #TestMergeDisplayGroup:
