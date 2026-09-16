@@ -8,7 +8,7 @@ from alasio.config.entry.model import ConfigSetEvent
 from alasio.config.entry.utils import validate_nav_name
 from alasio.ext import env
 from alasio.ext.cache import cached_property
-from alasio.ext.deep import *
+from alasio.ext.deep import deep_get, deep_get_with_error, deep_iter_depth2, deep_values_depth1, dict_copy
 from alasio.ext.file.loadpy import LOADPY_CACHE
 from alasio.ext.file.msgspecfile import deepcopy_msgpack
 from alasio.ext.path.calc import is_abspath, joinnormpath
@@ -323,6 +323,35 @@ class ModLoader:
 
         event = ConfigSetEvent(task=task_name, group=group_name, arg='', value=None)
         return mod.config_group_reset(config_name, event)
+
+    def gui_config_batch_reset(
+            self,
+            mod_name: str,
+            config_name: str,
+            list_task_group_arg: list[tuple[str, str, str]],
+    ) -> list[ConfigSetEvent]:
+        """
+        Reset selected config values and return their default-value events.
+
+        Args:
+            mod_name (str):
+            config_name (str):
+            list_task_group_arg (list[tuple[str, str, str]]):
+
+        Returns:
+            list[ConfigSetEvent]:
+        """
+        try:
+            mod = self.dict_mod[mod_name]
+        except KeyError:
+            logger.warning(f'No such mod: "{mod_name}"')
+            return []
+
+        events = [
+            ConfigSetEvent(task=task, group=group, arg=arg, value=None)
+            for task, group, arg in list_task_group_arg
+        ]
+        return mod.config_batch_reset(config_name, events)
 
     def gui_config_group_batch_reset(self, mod_name, config_name, list_task_group):
         """

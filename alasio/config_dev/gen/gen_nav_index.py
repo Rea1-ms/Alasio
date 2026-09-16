@@ -79,8 +79,8 @@ class GenNavIndex(CrossNavGenerator):
         """
         current_navs = {}
         for nav_name, config in self.dict_nav_config.items():
-            # skip dashboard
-            if nav_name == 'dashboard':
+            # special pages have fixed navigation buttons
+            if nav_name in {'dashboard', 'device'}:
                 continue
             # skip empty nav
             if not config.tasks_data:

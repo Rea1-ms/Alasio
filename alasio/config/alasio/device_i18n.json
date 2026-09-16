@@ -268,11 +268,11 @@
       }
     },
     "ScreenshotDedithering": {
-      "zh-CN": {"name": "Emulator.ScreenshotDedithering", "help": ""},
-      "en-US": {"name": "Emulator.ScreenshotDedithering", "help": ""},
-      "ja-JP": {"name": "Emulator.ScreenshotDedithering", "help": ""},
-      "zh-TW": {"name": "Emulator.ScreenshotDedithering", "help": ""},
-      "en-ES": {"name": "Emulator.ScreenshotDedithering", "help": ""}
+      "zh-CN": {"name": "截图去色带", "help": "减少低色深截图中的色带，以提高图像识别稳定性。"},
+      "en-US": {"name": "Screenshot Dedithering", "help": "Reduce banding in low-color-depth screenshots to improve image recognition."},
+      "ja-JP": {"name": "スクリーンショットのディザリング除去", "help": "低色深度のスクリーンショットの縞模様を軽減し、画像認識を安定させます。"},
+      "zh-TW": {"name": "截圖去色帶", "help": "減少低色深截圖中的色帶，以提高圖像辨識穩定性。"},
+      "en-ES": {"name": "Reducción de bandas", "help": "Reduce las bandas en capturas con poca profundidad de color para mejorar el reconocimiento."}
     },
     "AdbRestart": {
       "zh-CN": {"name": "在检测不到设备的时候尝试重启adb", "help": ""},
@@ -411,18 +411,18 @@
       }
     },
     "Name": {
-      "zh-CN": {"name": "EmulatorInfo.Name", "help": ""},
-      "en-US": {"name": "EmulatorInfo.Name", "help": ""},
-      "ja-JP": {"name": "EmulatorInfo.Name", "help": ""},
-      "zh-TW": {"name": "EmulatorInfo.Name", "help": ""},
-      "en-ES": {"name": "EmulatorInfo.Name", "help": ""}
+      "zh-CN": {"name": "实例名称", "help": "通常会根据设备地址自动填写。"},
+      "en-US": {"name": "Instance Name", "help": "Usually filled automatically from the device serial."},
+      "ja-JP": {"name": "インスタンス名", "help": "通常はデバイスアドレスから自動入力されます。"},
+      "zh-TW": {"name": "實例名稱", "help": "通常會根據設備位址自動填寫。"},
+      "en-ES": {"name": "Nombre de instancia", "help": "Normalmente se completa automáticamente desde el serial del dispositivo."}
     },
     "Path": {
-      "zh-CN": {"name": "EmulatorInfo.Path", "help": ""},
-      "en-US": {"name": "EmulatorInfo.Path", "help": ""},
-      "ja-JP": {"name": "EmulatorInfo.Path", "help": ""},
-      "zh-TW": {"name": "EmulatorInfo.Path", "help": ""},
-      "en-ES": {"name": "EmulatorInfo.Path", "help": ""}
+      "zh-CN": {"name": "安装路径", "help": "模拟器可执行文件路径，通常会自动填写。"},
+      "en-US": {"name": "Install Path", "help": "Path to the emulator executable, usually filled automatically."},
+      "ja-JP": {"name": "インストール先", "help": "エミュレーター実行ファイルのパスです。通常は自動入力されます。"},
+      "zh-TW": {"name": "安裝路徑", "help": "模擬器可執行檔路徑，通常會自動填寫。"},
+      "en-ES": {"name": "Ruta de instalación", "help": "Ruta al ejecutable del emulador, normalmente completada automáticamente."}
     }
   },
   "Error": {
@@ -437,11 +437,11 @@
       "en-ES": {"name": "Ajustes de depuración", "help": ""}
     },
     "HandleError": {
-      "zh-CN": {"name": "Error.HandleError", "help": ""},
-      "en-US": {"name": "Error.HandleError", "help": ""},
-      "ja-JP": {"name": "Error.HandleError", "help": ""},
-      "zh-TW": {"name": "Error.HandleError", "help": ""},
-      "en-ES": {"name": "Error.HandleError", "help": ""}
+      "zh-CN": {"name": "自动处理错误", "help": "出现可恢复的设备错误时尝试自动处理。"},
+      "en-US": {"name": "Handle Errors Automatically", "help": "Try to recover automatically from recoverable device errors."},
+      "ja-JP": {"name": "エラーを自動処理", "help": "復旧可能なデバイスエラーから自動的に回復を試みます。"},
+      "zh-TW": {"name": "自動處理錯誤", "help": "出現可復原的設備錯誤時嘗試自動處理。"},
+      "en-ES": {"name": "Gestionar errores automáticamente", "help": "Intenta recuperarse automáticamente de errores recuperables del dispositivo."}
     },
     "SaveError": {
       "zh-CN": {"name": "出错时，保存 Log 和截图", "help": ""},
@@ -560,11 +560,11 @@
       }
     },
     "TaskHoardingDuration": {
-      "zh-CN": {"name": "Optimization.TaskHoardingDuration", "help": ""},
-      "en-US": {"name": "Optimization.TaskHoardingDuration", "help": ""},
-      "ja-JP": {"name": "Optimization.TaskHoardingDuration", "help": ""},
-      "zh-TW": {"name": "Optimization.TaskHoardingDuration", "help": ""},
-      "en-ES": {"name": "Optimization.TaskHoardingDuration", "help": ""}
+      "zh-CN": {"name": "任务缓冲时间", "help": "允许即将到期的任务一起执行，单位为秒。"},
+      "en-US": {"name": "Task Hoarding Duration", "help": "Run tasks due soon in the same batch, in seconds."},
+      "ja-JP": {"name": "タスク待機時間", "help": "間もなく実行時刻になるタスクを同じバッチで処理します。単位は秒です。"},
+      "zh-TW": {"name": "任務緩衝時間", "help": "允許即將到期的任務一起執行，單位為秒。"},
+      "en-ES": {"name": "Tiempo de agrupación de tareas", "help": "Ejecuta en el mismo lote las tareas próximas a vencer, en segundos."}
     },
     "WhenTaskQueueEmpty": {
       "zh-CN": {

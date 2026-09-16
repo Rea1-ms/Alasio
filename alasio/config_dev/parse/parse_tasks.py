@@ -16,6 +16,8 @@ class TaskGroup(msgspec.Struct):
     group: str
     # group validation model
     model: str = ''
+    # Optional display-only field selection. An empty list means all fields.
+    args: list[str] = field(default_factory=list)
 
     @classmethod
     def from_group(cls, task: str, group: str, value: "dict | str | TaskGroup") -> "TaskGroup":
@@ -62,7 +64,23 @@ class TaskGroup(msgspec.Struct):
             group = value.get('group', '')
             if not group:
                 raise DefinitionError('Missing key "group" in group reference', keys=[task, 'displays'], value=value)
-            return cls(task=task, group=str(group))
+            raw_args = value.get('args', [])
+            if raw_args is None:
+                raw_args = []
+            if type(raw_args) not in (list, tuple):
+                raise DefinitionError(
+                    'Display group "args" must be a list', keys=[task, 'displays'], value=value)
+            args = []
+            for arg in raw_args:
+                if not isinstance(arg, str) or not arg:
+                    raise DefinitionError(
+                        'Display group arg must be a non-empty string',
+                        keys=[task, 'displays'], value=value)
+                if arg in args:
+                    raise DefinitionError(
+                        f'Duplicate display arg: "{arg}"', keys=[task, 'displays'], value=value)
+                args.append(arg)
+            return cls(task=task, group=str(group), args=args)
         # others treat as str
         return cls(task=task, group=str(value))
 

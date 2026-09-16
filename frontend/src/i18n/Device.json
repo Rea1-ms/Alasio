@@ -5,5 +5,40 @@
     "ja-JP": "デバイス",
     "zh-TW": "設備",
     "es-ES": "Dispositivo"
+  },
+  "ActionScheduled": {
+    "en-US": "{name} scheduled",
+    "zh-CN": "已安排{name}",
+    "ja-JP": "{name}を予約しました",
+    "zh-TW": "已安排{name}",
+    "es-ES": "{name} programado"
+  },
+  "ActionTitle": {
+    "en-US": "Device Actions",
+    "zh-CN": "设备操作",
+    "ja-JP": "デバイス操作",
+    "zh-TW": "設備操作",
+    "es-ES": "Acciones del dispositivo"
+  },
+  "ActionHelp": {
+    "en-US": "Run a restart task immediately. Current automation will switch at the next safe task boundary.",
+    "zh-CN": "立即安排重启任务；正在运行的自动化会在下一个安全任务边界切换。",
+    "ja-JP": "再起動タスクを直ちに予約します。実行中の自動化は次の安全なタスク境界で切り替わります。",
+    "zh-TW": "立即安排重新啟動任務；正在執行的自動化會在下一個安全任務邊界切換。",
+    "es-ES": "Programa una tarea de reinicio inmediata. La automatización cambiará en el siguiente límite seguro."
+  },
+  "RestartGame": {
+    "en-US": "Restart Game",
+    "zh-CN": "重启游戏",
+    "ja-JP": "ゲームを再起動",
+    "zh-TW": "重新啟動遊戲",
+    "es-ES": "Reiniciar juego"
+  },
+  "RestartDevice": {
+    "en-US": "Restart Device",
+    "zh-CN": "重启设备",
+    "ja-JP": "デバイスを再起動",
+    "zh-TW": "重新啟動設備",
+    "es-ES": "Reiniciar dispositivo"
   }
 }

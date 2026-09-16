@@ -157,29 +157,37 @@ class GenConfigIndex(CrossNavGenerator):
             list[str]: indicates to read {nav}_i18n.json
         """
         i18n = {}
-        for keys, arg in deep_iter(config.config_data, depth=3):
-            nav, card, group = keys
-            # skip hidden
-            if group.startswith('_'):
-                continue
-            group_name = arg.get('i18ngroup', '')
+
+        def add_group_i18n(group_name):
             if not group_name:
-                group_name = arg.get('group', '')
-            if not group_name:
-                # this shouldn't happen, because dict is build at above
-                raise DefinitionError(f'Missing "group" in {nav}.{card}', file=config.config_file)
+                raise DefinitionError(f'Missing "group" in {config.nav_name}', file=config.config_file)
             try:
                 group = self.groups_data[group_name]
             except KeyError:
-                # this shouldn't happen, because group_name is already validated
                 raise DefinitionError(
                     f'Group "{group_name}" is not defined in any file', file=config.config_file)
             if self.alasio and group_name in self.alasio.groups_data:
                 file = group.parser.i18n_file.subpath_to(self.alasio.path_config)
             else:
                 file = group.parser.i18n_file.subpath_to(self.path_config)
-            read = to_posix(file)
-            i18n[read] = None
+            i18n[to_posix(file)] = None
+
+        # Card titles can use a display-only group whose file is otherwise
+        # absent from the selected argument groups.
+        for card_data in config.config_data.values():
+            info = card_data.get('_info')
+            if info:
+                add_group_i18n(info.get('group', ''))
+
+        for keys, arg in deep_iter(config.config_data, depth=3):
+            _, _, group = keys
+            # skip hidden
+            if group.startswith('_'):
+                continue
+            group_name = arg.get('i18ngroup', '')
+            if not group_name:
+                group_name = arg.get('group', '')
+            add_group_i18n(group_name)
 
         # sort i18n to load, for consistent behaviour
         # alasio first, then mod's

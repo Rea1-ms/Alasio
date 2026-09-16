@@ -54,7 +54,7 @@ class CrossNavGenerator:
                 parser.folder = folder.name
                 # nav
                 nav = parser.nav_name
-                if self.alasio and nav in self.alasio.dict_nav_config:
+                if self.alasio and nav in self.alasio.dict_nav_config and nav != 'device':
                     raise DefinitionError(
                         f'Conflict nav name: "{nav}", which is already used in alasio',
                         file=file,
@@ -72,7 +72,7 @@ class CrossNavGenerator:
             for nav_name, parser in out.items():
                 if parser.folder in dict_folder:
                     raise DefinitionError(
-                        f'Cannot define multiple nav in the same nav folder',
+                        'Cannot define multiple nav in the same nav folder',
                         file=parser.file,
                     )
                 dict_folder[parser.folder] = nav_name
@@ -96,7 +96,7 @@ class CrossNavGenerator:
                 # group name cannot be GroupBase
                 if group_name == 'GroupBase':
                     raise DefinitionError(
-                        f'Group name cannot be "GroupBase"',
+                        'Group name cannot be "GroupBase"',
                         file=config.file, keys=[group_name],
                     )
                 # group must be unique
@@ -200,6 +200,13 @@ class CrossNavGenerator:
                             file=task.parser.tasks_file, keys=[task_name, 'displays'], value=ref)
                     if not ref.model:
                         ref.model = parent_ref.model
+                    if ref.args:
+                        group = self.groups_data[ref.model]
+                        missing = [name for name in ref.args if name not in group.args or group.args[name].hide]
+                        if missing:
+                            raise DefinitionError(
+                                f'Invalid display args in {ref.task}.{ref.group}: {missing}',
+                                file=task.parser.tasks_file, keys=[task_name, 'displays'], value=ref)
 
         # build card info
         for task_name, task in self.tasks_data.items():
@@ -504,7 +511,9 @@ class CrossNavGenerator:
                         if group.dashboard_color:
                             info['dashboard_color'] = group.dashboard_color
                         args['_info'] = NoIndent(info)
-                    for arg_name, arg in group.args.items():
+                    arg_names = ref.args or group.args.keys()
+                    for arg_name in arg_names:
+                        arg = group.args[arg_name]
                         if arg.hide:
                             continue
                         row = {'task': ref.task, 'group': ref.group, 'arg': arg_name}

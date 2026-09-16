@@ -1,4 +1,3 @@
-from collections import deque
 from typing import Any
 
 import trio.to_thread
@@ -10,7 +9,7 @@ from alasio.backend.reactive.event import ResponseEvent
 from alasio.backend.reactive.source import DiskCache, KeyedSource
 from alasio.backend.topic import _config_event
 from alasio.backend.topic._gui_config import GuiConfigSource
-from alasio.backend.topic.state import ConnState, NavState
+from alasio.backend.topic.state import ConnState
 from alasio.backend.ws.ws_topic import BaseTopic
 from alasio.config.entry.loader import MOD_LOADER
 from alasio.config.entry.model import ConfigSetEvent
@@ -76,20 +75,33 @@ class ConfigArgSource(KeyedSource, GuiConfigSource):
 
 class ConfigArg(BaseTopic):
     TOPIC_NAME = 'ConfigArg'
+    SOURCE_CLASS = ConfigArgSource
+    FIXED_NAV = ''
+
+    async def _get_view_context(self) -> tuple[str, str, str, str] | None:
+        state = ConnState(self.conn_id, self.server)
+        mod_name = await state.mod_name
+        config_name = await state.config_name
+        lang = await state.lang
+        nav_name = self.FIXED_NAV or await state.nav_name
+        if not mod_name or not config_name or not nav_name or not lang:
+            return None
+        return mod_name, config_name, nav_name, lang
+
+    def _get_view_source(self, mod_name: str, config_name: str, nav_name: str, lang: str):
+        if self.FIXED_NAV:
+            return self.SOURCE_CLASS.get(mod_name, config_name, lang)
+        return self.SOURCE_CLASS.get(mod_name, config_name, nav_name, lang)
 
     async def get_source(self):
         """
         Resolve the view source of the current (mod, config, nav, lang);
         the full view is built by source.subscribe() on registration.
         """
-        state = ConnState(self.conn_id, self.server)
-        mod_name = await state.mod_name
-        config_name = await state.config_name
-        nav_name = await state.nav_name
-        lang = await state.lang
-        if not mod_name or not config_name or not nav_name or not lang:
+        context = await self._get_view_context()
+        if context is None:
             return None
-        source = ConfigArgSource.get(mod_name, config_name, nav_name, lang)
+        source = self._get_view_source(*context)
         if source is None:
             # config / mod / nav deleted: silent, next dependency change
             # re-runs this flow
@@ -101,14 +113,10 @@ class ConfigArg(BaseTopic):
         if not task or not group or not arg:
             return
         # get config_name
-        state = ConnState(self.conn_id, self.server)
-        nav: NavState = await state.nav_state
-        mod_name = nav.mod_name
-        config_name = nav.config_name
-        nav_name = nav.nav_name
-        lang = await state.lang
-        if not config_name:
+        context = await self._get_view_context()
+        if context is None:
             return
+        mod_name, config_name, nav_name, lang = context
 
         # call
         success, responses = await trio.to_thread.run_sync(
@@ -126,7 +134,7 @@ class ConfigArg(BaseTopic):
             # set response for this connection (values are not re-read from
             # the config store), the error message comes from resp.error
             resp = responses[0]
-            source = ConfigArgSource.get(mod_name, config_name, nav_name, lang)
+            source = self._get_view_source(mod_name, config_name, nav_name, lang)
             if source is None:
                 # config deleted: nothing to roll back on screen
                 return
@@ -152,12 +160,10 @@ class ConfigArg(BaseTopic):
         if not task or not group or not arg:
             return
         # get config_name
-        state = ConnState(self.conn_id, self.server)
-        nav: NavState = await state.nav_state
-        mod_name = nav.mod_name
-        config_name = nav.config_name
-        if not config_name:
+        context = await self._get_view_context()
+        if context is None:
             return
+        mod_name, config_name, _, _ = context
 
         # call
         resp = await trio.to_thread.run_sync(
@@ -177,38 +183,32 @@ class ConfigArg(BaseTopic):
         if not card:
             return
         # get config_name
-        state = ConnState(self.conn_id, self.server)
-        nav: NavState = await state.nav_state
-        mod_name = nav.mod_name
-        config_name = nav.config_name
-        nav_name = nav.nav_name
-        lang = await state.lang
-        if not config_name or not nav_name:
+        context = await self._get_view_context()
+        if context is None:
             return
+        mod_name, config_name, nav_name, lang = context
 
-        # get all task-group within card
-        # copy to avoid modification during iterating, group reset is rarely used so copy is acceptable
-        source = ConfigArgSource.get(mod_name, config_name, nav_name, lang)
+        # Reset exactly the arguments displayed in the card. A card can now
+        # contain a selected subset of a source group, so resetting the whole
+        # group would unexpectedly reset hidden settings.
+        source = self._get_view_source(mod_name, config_name, nav_name, lang)
         if source is None:
             return
-        list_task_group = deque()
+        list_task_group_arg = []
         for key, value in source.dict_config_to_topic.items():
             # dict_config_to_topic[(task, group, arg)] = (card_name, group_name, arg_name)
             try:
-                task = key[0]
-                group = key[1]
                 card_name = value[0]
             except (IndexError, TypeError):
                 # this shouldn't happen
                 continue
             if card_name == card:
-                list_task_group.append((task, group))
-        # config_group_batch_reset will do de-redundancy, so no need to do here
+                list_task_group_arg.append(key)
 
         # call
         resp = await trio.to_thread.run_sync(
-            MOD_LOADER.gui_config_group_batch_reset,
-            mod_name, config_name, list_task_group
+            MOD_LOADER.gui_config_batch_reset,
+            mod_name, config_name, list_task_group_arg
         )
         # resp: list[ConfigSetEvent]
         if not resp:
