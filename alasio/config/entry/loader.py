@@ -198,6 +198,7 @@ class ModLoader:
             i18n.update(group_i18n)
         # prepare config
         config = mod.config_read(config_name, nav_ref.config)
+        hidden_args = mod.gui_config_hidden(config)
 
         # _info at depth2
         # group.arg at depth3
@@ -249,6 +250,8 @@ class ModLoader:
                                    f'when getting mod="{mod_name}", nav="{nav_name}"')
                     continue
                 arg_data['value'] = value
+                if f'{task_name}.{group_name}.{arg_name}' in hidden_args:
+                    arg_data['hide'] = True
 
         return out
 

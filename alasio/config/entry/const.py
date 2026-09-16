@@ -72,6 +72,16 @@ class ModEntryInfo(Struct):
 
 
 class ConfigConst:
+    # Optional per-mod dynamic GUI visibility hooks. Paths use
+    # Task.Group.Arg so mods can reuse their existing config rules without
+    # teaching the generic frontend about game-specific conditions.
+    GUI_CONFIG_HIDDEN_TARGETS = frozenset()
+    GUI_CONFIG_HIDDEN_DEPENDENCIES = frozenset()
+
+    @staticmethod
+    def gui_config_hidden(data):
+        return frozenset()
+
     SCHEDULER_PRIORITY = """
     RestartDevice > RestartGame
     """

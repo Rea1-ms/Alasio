@@ -1,5 +1,6 @@
-from alasio.config.entry.const import ModEntryInfo
+from alasio.config.entry.const import ConfigConst, ModEntryInfo
 from alasio.config.entry.model import DECODER_CACHE, MOD_JSON_CACHE, MODEL_CONFIG_INDEX, MODEL_TASK_INDEX
+from alasio.ext.cache import cached_property
 from alasio.ext import env
 from alasio.ext.file.loadpy import LOADPY_CACHE
 from alasio.ext.path import PathStr
@@ -28,6 +29,56 @@ class ModBase:
 
     def __bool__(self):
         return True
+
+    @cached_property
+    def config_const(self):
+        """Load the optional constants and GUI hooks declared by this mod."""
+        file = self.path_config / 'const.py'
+        try:
+            module = LOADPY_CACHE.get(file)
+        except ImportError as e:
+            logger.warning(
+                f'DataInconsistent: failed to import config constants "{file}": {e}')
+            return ConfigConst
+        config_const = getattr(module, 'ConfigConst', None)
+        if config_const is None:
+            logger.warning(
+                f'DataInconsistent: Missing ConfigConst in "{file}"')
+            return ConfigConst
+        return config_const
+
+    @staticmethod
+    def _gui_config_paths(values) -> "frozenset[tuple[str, str, str]]":
+        paths = set()
+        for value in values:
+            if not isinstance(value, str):
+                continue
+            path = tuple(value.split('.', 2))
+            if len(path) == 3:
+                paths.add(path)
+        return frozenset(paths)
+
+    @cached_property
+    def gui_config_hidden_targets(self) -> "frozenset[tuple[str, str, str]]":
+        values = getattr(self.config_const, 'GUI_CONFIG_HIDDEN_TARGETS', ())
+        return self._gui_config_paths(values)
+
+    @cached_property
+    def gui_config_hidden_dependencies(self) -> "frozenset[tuple[str, str, str]]":
+        values = getattr(self.config_const, 'GUI_CONFIG_HIDDEN_DEPENDENCIES', ())
+        return self._gui_config_paths(values)
+
+    def gui_config_hidden(self, data) -> "set[str]":
+        handler = getattr(self.config_const, 'gui_config_hidden', None)
+        if not callable(handler):
+            return set()
+        try:
+            values = handler(data)
+        except Exception as e:
+            logger.exception(
+                f'DataInconsistent: failed to evaluate GUI visibility for mod "{self.name}": {e}')
+            return set()
+        return {value for value in values if isinstance(value, str)}
 
     """
     Index json

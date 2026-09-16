@@ -6,6 +6,7 @@ from alasio.backend.topic.scan import ConfigScanSource
 from alasio.config.entry.loader import MOD_LOADER
 from alasio.config.entry.model import ConfigSetEvent
 from alasio.ext.deep import deep_iter
+from alasio.logger import logger
 
 # Concrete GUI view source classes that take part in config-save routing.
 # Collected at class definition time (only real topics -- with a
@@ -59,6 +60,12 @@ class GuiConfigSource(NoCachePush):
         # first subscribe (_build_full); empty until then (an empty
         # mapping drops every event -- safe, see the class docstring).
         self.dict_config_to_topic = {}
+        # Dynamic visibility refreshes are coalesced. A new related config
+        # event that arrives while a rebuild is running requests one more pass,
+        # so the final full snapshot always reflects the latest persisted data.
+        self._has_dynamic_hide_targets = False
+        self._refresh_requested = False
+        self._refresh_running = False
 
     def _validate_config(self):
         """
@@ -134,7 +141,11 @@ class GuiConfigSource(NoCachePush):
             dict: The full view data (falsy = empty view).
         """
         view, mapping = await trio.to_thread.run_sync(self.build)
-        self.dict_config_to_topic = mapping
+        mod = MOD_LOADER.dict_mod.get(self.mod_name)
+        targets = getattr(mod, 'gui_config_hidden_targets', frozenset())
+        with self._lock:
+            self.dict_config_to_topic = mapping
+            self._has_dynamic_hide_targets = bool(targets.intersection(mapping))
         return view
 
     def _convert(self, event):
@@ -152,6 +163,67 @@ class GuiConfigSource(NoCachePush):
             return None
         topic_key = (*key, 'value')
         return ResponseEvent(t=self.TOPIC_NAME, o='set', k=topic_key, v=event.value)
+
+    @staticmethod
+    def _event_paths(event):
+        events = event if isinstance(event, list) else [event]
+        for item in events:
+            if type(item) is dict:
+                task = item.get('task')
+                group = item.get('group')
+                arg = item.get('arg')
+            else:
+                task = getattr(item, 'task', None)
+                group = getattr(item, 'group', None)
+                arg = getattr(item, 'arg', None)
+            if task and group and arg:
+                yield task, group, arg
+
+    def _needs_dynamic_hide_refresh(self, event) -> bool:
+        if not self._has_dynamic_hide_targets:
+            return False
+        mod = MOD_LOADER.dict_mod.get(self.mod_name)
+        dependencies = getattr(mod, 'gui_config_hidden_dependencies', frozenset())
+        return any(path in dependencies for path in self._event_paths(event))
+
+    def _request_dynamic_hide_refresh(self, event):
+        """Schedule a coalesced full rebuild after a visibility dependency changes."""
+        if not self._needs_dynamic_hide_refresh(event):
+            return
+        with self._lock:
+            if not self._subscribers or self._trio_token is None:
+                return
+            self._refresh_requested = True
+            if self._refresh_running:
+                return
+            self._refresh_running = True
+            token = self._trio_token
+        try:
+            token.run_sync_soon(self._spawn_dynamic_hide_refresh)
+        except trio.RunFinishedError:
+            with self._lock:
+                self._refresh_requested = False
+                self._refresh_running = False
+
+    def _spawn_dynamic_hide_refresh(self):
+        trio.lowlevel.spawn_system_task(self._dynamic_hide_refresh_loop)
+
+    async def _dynamic_hide_refresh_loop(self):
+        try:
+            while True:
+                with self._lock:
+                    if not self._refresh_requested:
+                        self._refresh_running = False
+                        return
+                    self._refresh_requested = False
+                await self.reinit()
+        except Exception as e:
+            logger.exception(
+                f'Failed to refresh dynamic GUI visibility for '
+                f'mod="{self.mod_name}", config="{self.config_name}", nav="{self.nav_name}": {e}')
+            with self._lock:
+                self._refresh_requested = False
+                self._refresh_running = False
 
     # ---------------- config-save routing (application layer) ----------------
 
@@ -176,3 +248,4 @@ class GuiConfigSource(NoCachePush):
             for _, source in src_cls.singleton_items():
                 if source.config_name == config_name:
                     source.on_event(event)
+                    source._request_dynamic_hide_refresh(event)

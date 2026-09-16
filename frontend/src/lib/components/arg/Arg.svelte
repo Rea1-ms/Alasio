@@ -50,5 +50,8 @@
   });
 </script>
 
-<!-- Pass all props, including parentWidth, down to the chosen layout -->
-<LayoutComponent {data} {InputComponent} {...restProps} />
+<!-- Hidden args stay in topic data so dependency changes can restore them. -->
+{#if !data.hide}
+  <!-- Pass all props, including parentWidth, down to the chosen layout -->
+  <LayoutComponent {data} {InputComponent} {...restProps} />
+{/if}
