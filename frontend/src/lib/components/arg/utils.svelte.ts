@@ -90,6 +90,8 @@ export type InfoData = {
   arg: string;
   // usually to be "card-{task}-{group}"
   card: string;
+  // False keeps this card on the page without giving it a sidebar entry.
+  nav?: boolean;
   name?: string;
   help?: string;
 };

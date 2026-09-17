@@ -5,6 +5,7 @@
   import { cn } from "$lib/utils";
   import type UIState from "$private/config/[config_name]/state.svelte";
   import ArgCard from "./ArgCard.svelte";
+  import { getNavigationCard } from "./navigation";
   import type { CardData, InfoData, InputProps } from "./utils.svelte";
 
   type $props = {
@@ -122,7 +123,7 @@
         const card_scroll = ui.card_scroll;
         if (foundKey !== card_scroll) {
           ui.card_scroll = foundKey;
-          ui.card_indicate = foundKey;
+          ui.card_indicate = getNavigationCard(data, foundKey);
         }
       });
     }

@@ -92,6 +92,8 @@ class DisplayCard(msgspec.Struct, dict=True):
     # key: group name
     groups: Dict[str, TaskGroup]
     info: str = ''
+    # Keep the card in the config page, but optionally omit its sidebar entry.
+    nav: bool = True
 
     @classmethod
     def from_card(cls, task: str, row: "dict | str | list | TaskGroup"):
@@ -101,13 +103,19 @@ class DisplayCard(msgspec.Struct, dict=True):
             "Scheduler"
             {"info": "Fleet", "groups": "Fleet1"}
             {"info": "Fleet", "groups": ["Fleet1", "Fleet2"]}
+            {"group": "Fleet2", "nav": False}
             ["Fleet1", "Fleet2"]
             {"task": "Commission", "group": "Preset"}
             [{"task": "Commission", "group": "Preset"}, "Custom"]
             {"info": "Commission", "groups": {"task": "Commission", "group": "Preset"}}
             {"info": "Commission", "groups": [{"task": "Commission", "group": "Preset"}, "Custom"]}
         """
+        nav = True
         if type(row) is dict:
+            nav = row.get('nav', True)
+            if type(nav) is not bool:
+                raise DefinitionError(
+                    'Display card "nav" must be a boolean', keys=[task, 'displays', 'nav'], value=nav)
             raw_info = row.get('info', '')
             groups = row.get('groups', {})
             if not raw_info and not groups:
@@ -144,7 +152,7 @@ class DisplayCard(msgspec.Struct, dict=True):
                 raise DefinitionError(
                     f'Duplicate group to display: "{group.group}"', keys=[task, 'displays'], value=group)
             dict_groups[group.group] = group
-        return cls(task=task, raw_info=raw_info, groups=dict_groups)
+        return cls(task=task, raw_info=raw_info, groups=dict_groups, nav=nav)
 
 
 class CardNameBuilder:

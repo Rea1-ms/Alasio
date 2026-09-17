@@ -142,7 +142,7 @@ class GenNavIndex(CrossNavGenerator):
             # nav name, which must not empty
             empty = True
             for group in config.tasks_data.values():
-                if group.displays:
+                if any(card.nav for card in group.displays.values()):
                     empty = False
                     break
             if config.tasks_data and not empty:
@@ -160,6 +160,10 @@ class GenNavIndex(CrossNavGenerator):
                     info = data['_info']
                 except KeyError:
                     raise DefinitionError(f'Card "{nav_name}.{card_name}" has no "_info"')
+                # This only controls navigation. The card and all its fields
+                # remain in config_data, with unchanged persistence paths.
+                if info.get('nav') is False:
+                    continue
                 try:
                     group_name = info['group']
                 except KeyError:

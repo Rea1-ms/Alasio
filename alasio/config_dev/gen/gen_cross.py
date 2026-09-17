@@ -494,6 +494,8 @@ class CrossNavGenerator:
                 if config.nav_name != 'dashboard':
                     # No card._info in dashboard, for simpler data structure
                     row = {'group': card.info, 'arg': '_info', 'card': card_name}
+                    if not card.nav:
+                        row['nav'] = False
                     # resolve group._info
                     info_group = self.groups_data[card.info]
                     if info_group.parent and not info_group.override_i18n and not info_group.dashboard:
