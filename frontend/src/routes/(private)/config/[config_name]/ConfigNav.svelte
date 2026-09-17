@@ -169,7 +169,7 @@
   <h1 class="w-full flex-1 text-center text-lg">{displayHeader}</h1>
 {/snippet}
 
-<nav class={cn("w-full", className)} aria-label="Configuration Navigation">
+<nav class={cn("w-full", className)} aria-label={t.ConfigNav.NavigationLabel()}>
   <div class="flex flex-col px-3">
     <!-- 
       Overview and Device buttons has the same style as the accordion items, 
@@ -177,10 +177,10 @@
       Keep height h-10
     -->
     <div class="py-1">
-      <NavButton name="Overview" active={ui.isOverview} onclick={onOverviewClick} variant="root" />
+      <NavButton name={t.Overview.OverviewTitle()} active={ui.isOverview} onclick={onOverviewClick} variant="root" />
     </div>
     <div class="py-1">
-      <NavButton name="Device" active={ui.isDevice} onclick={onDeviceClick} variant="root" />
+      <NavButton name={t.Device.DeviceTitle()} active={ui.isDevice} onclick={onDeviceClick} variant="root" />
     </div>
   </div>
 
@@ -215,6 +215,6 @@
       {/each}
     </Accordion>
   {:else}
-    <p>No data</p>
+    <p>{t.ConfigNav.NoData()}</p>
   {/if}
 </nav>

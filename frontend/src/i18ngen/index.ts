@@ -1,6 +1,7 @@
 // Aggregation Entry
 import * as AssetManager from "./AssetManager";
 import * as Auth from "./Auth";
+import * as ConfigNav from "./ConfigNav";
 import * as ConfigScan from "./ConfigScan";
 import * as Dashboard from "./Dashboard";
 import * as DevTool from "./DevTool";
@@ -16,6 +17,7 @@ import * as WebsocketTest from "./WebsocketTest";
 export const t = {
   AssetManager,
   Auth,
+  ConfigNav,
   ConfigScan,
   Dashboard,
   DevTool,

@@ -7,6 +7,7 @@ from alasio.config_dev.parse.base import DefinitionError
 from alasio.config_dev.parse.build_mro import build_mro
 from alasio.config_dev.parse.cache_alasio import CacheAlasio
 from alasio.config_dev.parse.parse_groups import GroupData, ParseGroups
+from alasio.config_dev.parse.parse_index_i18n import read_index_i18n
 from alasio.config_dev.parse.parse_store import ParseStore
 from alasio.ext.cache import cached_property
 from alasio.ext.deep import deep_exist, deep_iter_depth2, deep_set
@@ -29,6 +30,12 @@ class CrossNavGenerator:
 
         # Alasio global
         self.alasio: "Optional[CrossNavGenerator]" = CacheAlasio().get(entry)
+
+    @cached_property
+    def index_i18n_data(self):
+        # This source is never rewritten by generation. Existing mods may
+        # omit it and continue using translations preserved in their indices.
+        return read_index_i18n(self.path_config.joinpath('index.i18n.yaml'))
 
     @cached_property
     def dict_nav_config(self):

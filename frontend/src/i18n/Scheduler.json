@@ -1,4 +1,18 @@
 {
+  "Now": {
+    "en-US": "now",
+    "zh-CN": "现在",
+    "ja-JP": "現在",
+    "zh-TW": "現在",
+    "es-ES": "ahora"
+  },
+  "Over24Hours": {
+    "en-US": ">24h",
+    "zh-CN": ">24小时",
+    "ja-JP": ">24時間",
+    "zh-TW": ">24小時",
+    "es-ES": ">24h"
+  },
   "Idle": {
     "en-US": "Idle",
     "zh-CN": "空闲",

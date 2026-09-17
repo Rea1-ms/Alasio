@@ -131,7 +131,8 @@ class GenNavIndex(CrossNavGenerator):
                     {"scheduler": True, "i18n": {lang: name}} for cards with scheduler
                     {"i18n": {lang: name}} for cards without scheduler
 
-            {nav_name}._info is manual maintained, its value is {"i18n": {lang: name}}
+            {nav_name}._info uses index.i18n.yaml nav labels, then existing index labels.
+            Its value is {"i18n": {lang: name}}.
             {nav_name}.{card_name} is auto generated from card.info,
             "scheduler" is True when the card displays a "Scheduler" group
         """
@@ -148,7 +149,9 @@ class GenNavIndex(CrossNavGenerator):
             if config.tasks_data and not empty:
                 for lang in self.entry.gui_language:
                     key = [nav_name, '_info', 'i18n', lang]
-                    value = deep_get(old, key, default='')
+                    value = deep_get(self.index_i18n_data, ['nav', nav_name, lang], default='')
+                    if not value:
+                        value = deep_get(old, key, default='')
                     if not value:
                         value = nav_name
                     deep_set(out, key, value)

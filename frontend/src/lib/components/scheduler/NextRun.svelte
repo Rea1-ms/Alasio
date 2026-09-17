@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { t } from "$lib/i18n";
+
   type $Props = {
     // timestamp in seconds or ISO string
     timestamp: number | string;
@@ -20,7 +22,7 @@
     const dayInMs = 24 * 60 * 60 * 1000;
 
     if (diff <= 0) {
-      return "now";
+      return t.Scheduler.Now();
     } else if (diff <= dayInMs) {
       // within 24h, display as hh:mm
       const date = new Date(target);
@@ -30,7 +32,7 @@
         hour12: false,
       });
     } else {
-      return ">24h";
+      return t.Scheduler.Over24Hours();
     }
   });
 </script>

@@ -1,0 +1,16 @@
+{
+  "NavigationLabel": {
+    "en-US": "Configuration navigation",
+    "zh-CN": "配置导航",
+    "ja-JP": "設定ナビゲーション",
+    "zh-TW": "設定導覽",
+    "es-ES": "Navegación de configuración"
+  },
+  "NoData": {
+    "en-US": "No data",
+    "zh-CN": "暂无数据",
+    "ja-JP": "データなし",
+    "zh-TW": "暫無資料",
+    "es-ES": "Sin datos"
+  }
+}

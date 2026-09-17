@@ -137,7 +137,7 @@
         <div class="flex items-center gap-1">
           <ConfigState {workerState} displayIdle={true} iconClass="h-3 w-3" class="shrink-0" />
           <span class="flex-1 truncate text-xs">{taskRunning}</span>
-          <span class="min-w-8 shrink-0 text-right text-xs">now</span>
+          <span class="min-w-8 shrink-0 text-right text-xs">{t.Scheduler.Now()}</span>
         </div>
       {/if}
       <!-- Task next -->

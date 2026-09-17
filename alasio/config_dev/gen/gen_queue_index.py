@@ -34,7 +34,11 @@ class GenQueueIndex(CrossNavGenerator):
                 continue
             for lang in self.entry.gui_language:
                 key = [task_name, lang]
-                value = deep_get(old, key, default='')
+                value = deep_get(self.index_i18n_data, ['queue', task_name, lang], default='')
+                if not value:
+                    value = deep_get(old, key, default='')
+                if not value and self.alasio:
+                    value = deep_get(self.alasio.index_i18n_data, ['queue', task_name, lang], default='')
                 if not value:
                     value = task_name
                 deep_set(out, key, value)
