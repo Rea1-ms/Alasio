@@ -8,6 +8,7 @@
   import { Button } from "$lib/components/ui/button";
   import * as Card from "$lib/components/ui/card";
   import { t } from "$lib/i18n";
+  import { elementSize } from "$lib/use/size.svelte";
   import { useTopic } from "$lib/ws";
 
   type DeviceData = Record<string, CardData>;
@@ -18,6 +19,13 @@
   const resetRpc = topicClient.rpc();
   const groupResetRpc = topicClient.rpc();
   const actionRpc = topicClient.rpc({ timeout: 15000 });
+
+  // Match ArgCardList's content-width breakpoints. Viewport breakpoints
+  // diverge when the sidebar occupies part of the window.
+  let contentSize = $state({ width: 0, height: 0 });
+  const actionCardClass = $derived(
+    contentSize.width < 1200 ? "max-w-180" : contentSize.width < 1600 ? "w-3/5" : "max-w-240",
+  );
 
   function handleEdit(data: ArgData) {
     setRpc.call("set", {
@@ -67,8 +75,8 @@
   });
 </script>
 
-<div class="min-h-full w-full px-2.5 py-4">
-  <Card.Root class="neushadow mx-auto mb-4 max-w-180 gap-3 border-none">
+<div use:elementSize={contentSize} class="min-h-full w-full px-2.5 py-4">
+  <Card.Root class={`neushadow mx-auto mb-4 w-full gap-3 border-none ${actionCardClass}`}>
     <Card.Header>
       <Card.Title class="text-2xl font-bold">{t.Device.ActionTitle()}</Card.Title>
       <Card.Description>{t.Device.ActionHelp()}</Card.Description>
